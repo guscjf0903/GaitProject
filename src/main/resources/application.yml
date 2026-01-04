@@ -1,0 +1,22 @@
+spring:
+  application:
+    name: gait-project
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:local}
+
+server:
+  port: ${SERVER_PORT:8080}
+
+logging:
+  level:
+    root: ${LOG_LEVEL_ROOT:INFO}
+    com.gait: ${LOG_LEVEL_APP:DEBUG}
+    org.hibernate.SQL: ${LOG_LEVEL_SQL:DEBUG}
+    org.hibernate.type.descriptor.sql.BasicBinder: ${LOG_LEVEL_BINDER:TRACE}
+
+app:
+  jwt:
+    # 개발용 기본값. 운영에서는 환경변수/Secret Manager로 주입하세요.
+    # HS256 기준 최소 32바이트 이상 권장.
+    secret: ${APP_JWT_SECRET:change-me-to-a-very-long-secret-key-please-32bytes}
+    ttl-seconds: ${APP_JWT_TTL_SECONDS:86400}
