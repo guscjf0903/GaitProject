@@ -26,7 +26,9 @@ class SecurityConfig(
                 auth
                     .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll() // CORS preflight
                     .requestMatchers("/api/auth/**").permitAll()
-                    .requestMatchers(HttpMethod.POST, "/api/chat/stream").permitAll() // 1단계: 스트림 뼈대는 공개(2단계 이후 보호)
+                    // /api/chat/stream은 인증 필요 (JWT principal 사용)
+                    // 테스트를 위해 permitAll()로 두려면 주석 해제
+                    // .requestMatchers(HttpMethod.POST, "/api/chat/stream").permitAll()
                     // Swagger UI / OpenAPI (SpringDoc)
                     .requestMatchers(
                         "/swagger-ui.html",

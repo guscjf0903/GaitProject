@@ -20,3 +20,36 @@ app:
     # HS256 기준 최소 32바이트 이상 권장.
     secret: ${APP_JWT_SECRET:change-me-to-a-very-long-secret-key-please-32bytes}
     ttl-seconds: ${APP_JWT_TTL_SECONDS:86400}
+  ai:
+    # AI 서비스 사용 여부 (false면 StubAiService 사용)
+    use-stub: ${APP_AI_USE_STUB:true}
+
+spring:
+  ai:
+    # OpenAI 설정 (GPT-4o)
+    openai:
+      api-key: ${OPENAI_API_KEY:}
+      chat:
+        options:
+          model: ${OPENAI_MODEL:gpt-4o}
+          temperature: ${OPENAI_TEMPERATURE:0.7}
+    
+    # Vertex AI Gemini 설정
+    vertex:
+      ai:
+        gemini:
+          project-id: ${GOOGLE_PROJECT_ID:}
+          location: ${GOOGLE_LOCATION:us-central1}
+          credentials:
+            location: ${GOOGLE_CREDENTIALS_PATH:}
+          chat:
+            options:
+              model: ${GEMINI_MODEL:gemini-1.5-flash}
+              temperature: ${GEMINI_TEMPERATURE:0.7}
+          enabled: ${GEMINI_ENABLED:false}
+          pro:
+            enabled: ${GEMINI_PRO_ENABLED:false}
+            chat:
+              options:
+                model: ${GEMINI_PRO_MODEL:gemini-1.5-pro}
+                temperature: ${GEMINI_PRO_TEMPERATURE:0.7}

@@ -15,6 +15,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses
 import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
 import org.springframework.http.MediaType
+import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
@@ -23,6 +24,7 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter
 import org.springframework.core.task.TaskExecutor
 import java.util.UUID
 import com.gait.gaitproject.domain.common.enums.PlanType
+import com.gait.gaitproject.security.UserPrincipal
 
 @Tag(name = "Chat Stream", description = "SSE 기반 스트리밍 응답")
 @RestController
@@ -36,8 +38,8 @@ class ChatStreamController(
 ) {
 
     /**
-     * 1단계: SSE 스트리밍 파이프라인 뼈대만 제공합니다.
-     * 실제 LLM/RAG/ContextBuilder는 이후 단계에서 연결합니다.
+     * AI 답변 SSE 스트리밍
+     * 설계서 4.2 기준: 동적 컨텍스트 조립 + 플랜별 AI 서비스 선택
      */
     @PostMapping(
         value = ["/stream"],
@@ -56,25 +58,37 @@ class ChatStreamController(
             )
         ]
     )
-    fun stream(@Valid @RequestBody request: ChatStreamRequest): SseEmitter {
+    fun stream(
+        @Valid @RequestBody request: ChatStreamRequest,
+        @AuthenticationPrincipal principal: UserPrincipal?
+    ): SseEmitter {
         val workspaceId = requireNotNull(request.workspaceId)
         val branchId = requireNotNull(request.branchId)
+        val userId = principal?.userId
 
-        // MVP: user는 일단 workspace 소유자의 첫 user로 가정(2단계 이후 JWT principal로 대체)
-        val userId: UUID? = null
         val emitter = SseEmitter(120_000L) // 평균 30초, 최악 90초 정도를 고려한 타임아웃
 
         taskExecutor.execute {
             try {
-                // userId가 없으면 임시로 FREE 가정
+                // 플랜 조회 (JWT principal에서 userId 추출)
                 val plan = userId?.let { userService.get(it).plan } ?: PlanType.FREE
+
+                // RAG 검색 (필요 시)
                 val rag = userId?.let { ragInterceptor.maybeUseRag(it, branchId, request.content) }
                 val injected = rag?.injectedText?.let { "\n\n$it\n" } ?: ""
-                val ctx = contextBuilder.build(branchId = branchId, userQuery = request.content + injected)
-                val ai = aiRouter.pick(plan)
-                val prompt = ctx.combined
 
-                ai.streamAnswer(prompt) { chunk ->
+                // 컨텍스트 조립 (토큰 예산 기반)
+                val ctx = contextBuilder.build(
+                    branchId = branchId,
+                    userQuery = request.content + injected,
+                    planType = plan
+                )
+
+                // 플랜별 AI 서비스 선택
+                val ai = aiRouter.pick(plan)
+
+                // 스트리밍 응답 생성
+                ai.streamAnswer(ctx.combined) { chunk ->
                     val payload: Map<String, Any> = mapOf(
                         "chunk" to chunk,
                         "workspaceId" to workspaceId,
