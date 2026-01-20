@@ -1,0 +1,134 @@
+### ============================================
+### GaitProject API 테스트 파일
+### REST Client 확장 프로그램 사용
+### ============================================
+
+### 환경 변수 설정
+@baseUrl = http://localhost:8080
+@jwt_token = your-jwt-token-here
+@workspace_id = 550e8400-e29b-41d4-a716-446655440000
+@user_id = 550e8400-e29b-41d4-a716-446655440000
+
+### ============================================
+### 인증 (Auth)
+### ============================================
+
+### 회원가입
+POST {{baseUrl}}/api/auth/signup
+Content-Type: application/json
+
+{
+  "email": "test@example.com",
+  "password": "password123",
+  "name": "테스트 사용자"
+}
+
+### 로그인
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "test@example.com",
+  "password": "password123"
+}
+
+### ============================================
+### 워크스페이스 (Workspace)
+### ============================================
+
+### 워크스페이스 생성
+POST {{baseUrl}}/api/workspaces
+Content-Type: application/json
+Authorization: Bearer {{jwt_token}}
+
+{
+  "userId": "{{user_id}}",
+  "name": "테스트 워크스페이스"
+}
+
+### 워크스페이스 조회
+GET {{baseUrl}}/api/workspaces/{{workspace_id}}
+Authorization: Bearer {{jwt_token}}
+
+### ============================================
+### 브랜치 (Branch)
+### ============================================
+
+### 브랜치 생성
+POST {{baseUrl}}/api/workspaces/{{workspace_id}}/branches
+Content-Type: application/json
+Authorization: Bearer {{jwt_token}}
+
+{
+  "name": "feature/new-feature",
+  "parentBranchId": null
+}
+
+### 브랜치 목록 조회
+GET {{baseUrl}}/api/workspaces/{{workspace_id}}/branches
+Authorization: Bearer {{jwt_token}}
+
+### ============================================
+### 커밋 (Commit)
+### ============================================
+
+### 커밋 생성
+POST {{baseUrl}}/api/workspaces/{{workspace_id}}/commits
+Content-Type: application/json
+Authorization: Bearer {{jwt_token}}
+
+{
+  "branchId": "550e8400-e29b-41d4-a716-446655440001",
+  "message": "Initial commit",
+  "changes": {
+    "added": ["file1.txt"],
+    "modified": [],
+    "deleted": []
+  }
+}
+
+### 커밋 조회
+GET {{baseUrl}}/api/workspaces/{{workspace_id}}/commits/{{commit_id}}
+Authorization: Bearer {{jwt_token}}
+
+### ============================================
+### 머지 (Merge)
+### ============================================
+
+### 머지 생성
+POST {{baseUrl}}/api/workspaces/{{workspace_id}}/merges
+Content-Type: application/json
+Authorization: Bearer {{jwt_token}}
+
+{
+  "sourceBranchId": "550e8400-e29b-41d4-a716-446655440001",
+  "targetBranchId": "550e8400-e29b-41d4-a716-446655440002",
+  "mergeType": "FAST_FORWARD"
+}
+
+### ============================================
+### 채팅 (Chat)
+### ============================================
+
+### 메시지 전송
+POST {{baseUrl}}/api/chat/messages
+Content-Type: application/json
+Authorization: Bearer {{jwt_token}}
+
+{
+  "workspaceId": "{{workspace_id}}",
+  "content": "Hello, AI!",
+  "role": "USER"
+}
+
+### 메시지 목록 조회
+GET {{baseUrl}}/api/chat/messages?workspaceId={{workspace_id}}
+Authorization: Bearer {{jwt_token}}
+
+### ============================================
+### 사용자 워크스페이스 (User Workspace)
+### ============================================
+
+### 사용자의 워크스페이스 목록 조회
+GET {{baseUrl}}/api/users/{{user_id}}/workspaces
+Authorization: Bearer {{jwt_token}}

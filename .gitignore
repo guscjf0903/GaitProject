@@ -32,22 +32,28 @@ out/
 /dist/
 /nbdist/
 /.nb-gradle/
-
 ### VS Code ###
 .vscode/
-
 ### macOS ###
 .DS_Store
-
 ### Application ###
 application-local.yml
 application-local.properties
 *.log
-
 ### Environment Variables ###
 config/.env.*
 
 ### QueryDSL ###
 **/Q*.java
 **/Q*.kt
+# PlantUML 생성 파일
+*.png
+*.svg
+!docs/diagrams/*.png
+!docs/diagrams/*.svg
+.idea/
 
+# API 테스트 환경 변수 (민감 정보 포함 가능)
+http-client.env.json
+http-client.private.env.json
+docs/diagrams/example-class-diagram.puml
