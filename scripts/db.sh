@@ -10,7 +10,7 @@
 
 set -euo pipefail
 
-CMD=${1:-up}      # up | down | logs | ps
+CMD=${1:-up}      # up | down | logs | ps | reset
 ENV_TYPE=${2:-local}
 ENV_FILE="config/.env.${ENV_TYPE}"
 
@@ -26,6 +26,11 @@ case "$CMD" in
   down)
     docker compose --env-file "$ENV_FILE" down
     ;;
+  reset)
+    # ⚠️ 모든 데이터 삭제: docker volume(postgres_data)까지 제거 후 재생성
+    docker compose --env-file "$ENV_FILE" down -v
+    docker compose --env-file "$ENV_FILE" up -d
+    ;;
   logs)
     docker compose --env-file "$ENV_FILE" logs -f postgres
     ;;
@@ -33,7 +38,7 @@ case "$CMD" in
     docker compose --env-file "$ENV_FILE" ps
     ;;
   *)
-    echo "❌ 지원하지 않는 명령: $CMD (up|down|logs|ps)"
+    echo "❌ 지원하지 않는 명령: $CMD (up|down|reset|logs|ps)"
     exit 1
     ;;
 esac
