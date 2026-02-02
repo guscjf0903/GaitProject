@@ -3,28 +3,6 @@ spring:
     name: gait-project
   profiles:
     active: ${SPRING_PROFILES_ACTIVE:local}
-
-server:
-  port: ${SERVER_PORT:8080}
-
-logging:
-  level:
-    root: ${LOG_LEVEL_ROOT:INFO}
-    com.gait: ${LOG_LEVEL_APP:DEBUG}
-    org.hibernate.SQL: ${LOG_LEVEL_SQL:DEBUG}
-    org.hibernate.type.descriptor.sql.BasicBinder: ${LOG_LEVEL_BINDER:TRACE}
-
-app:
-  jwt:
-    # 개발용 기본값. 운영에서는 환경변수/Secret Manager로 주입하세요.
-    # HS256 기준 최소 32바이트 이상 권장.
-    secret: ${APP_JWT_SECRET:change-me-to-a-very-long-secret-key-please-32bytes}
-    ttl-seconds: ${APP_JWT_TTL_SECONDS:86400}
-  ai:
-    # AI 서비스 사용 여부 (false면 StubAiService 사용)
-    use-stub: ${APP_AI_USE_STUB:true}
-
-spring:
   ai:
     # OpenAI 설정 (GPT-4o)
     openai:
@@ -53,3 +31,23 @@ spring:
               options:
                 model: ${GEMINI_PRO_MODEL:gemini-1.5-pro}
                 temperature: ${GEMINI_PRO_TEMPERATURE:0.7}
+
+server:
+  port: ${SERVER_PORT:8080}
+
+logging:
+  level:
+    root: ${LOG_LEVEL_ROOT:INFO}
+    com.gait: ${LOG_LEVEL_APP:DEBUG}
+    org.hibernate.SQL: ${LOG_LEVEL_SQL:DEBUG}
+    org.hibernate.type.descriptor.sql.BasicBinder: ${LOG_LEVEL_BINDER:TRACE}
+
+app:
+  jwt:
+    # 개발용 기본값. 운영에서는 환경변수/Secret Manager로 주입하세요.
+    # HS256 기준 최소 32바이트 이상 권장.
+    secret: ${APP_JWT_SECRET:change-me-to-a-very-long-secret-key-please-32bytes}
+    ttl-seconds: ${APP_JWT_TTL_SECONDS:86400}
+  ai:
+    # AI 서비스 사용 여부 (false면 StubAiService 사용)
+    use-stub: ${APP_AI_USE_STUB:true}

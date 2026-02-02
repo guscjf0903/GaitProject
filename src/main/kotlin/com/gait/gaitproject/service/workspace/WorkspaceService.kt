@@ -1,6 +1,8 @@
 package com.gait.gaitproject.service.workspace
 
 import com.gait.gaitproject.domain.workspace.entity.Workspace
+import com.gait.gaitproject.domain.workspace.entity.Branch
+import com.gait.gaitproject.domain.workspace.repository.BranchRepository
 import com.gait.gaitproject.domain.workspace.repository.WorkspaceRepository
 import com.gait.gaitproject.dto.workspace.WorkspaceCreateRequest
 import com.gait.gaitproject.dto.workspace.WorkspaceResponse
@@ -14,6 +16,7 @@ import java.util.UUID
 @Transactional(readOnly = true)
 class WorkspaceService(
     private val workspaceRepository: WorkspaceRepository,
+    private val branchRepository: BranchRepository,
     private val userService: UserService
 ) {
     fun get(workspaceId: UUID): Workspace =
@@ -32,8 +35,22 @@ class WorkspaceService(
     fun create(request: WorkspaceCreateRequest): WorkspaceResponse {
         val user = userService.get(requireNotNull(request.userId))
         val entity = request.toEntity(user)
-        val saved = workspaceRepository.save(entity)
-        return WorkspaceResponse.fromEntity(saved)
+        val savedWorkspace = workspaceRepository.save(entity)
+
+        // ✅ Workspace 생성 시 기본 브랜치(main) 자동 생성
+        // - 프론트에서 workspace 클릭 후 "다음 단계"가 비어 보이지 않게 하기 위함
+        val main = branchRepository.save(
+            Branch(
+                workspace = savedWorkspace,
+                name = "main",
+                description = "기본 브랜치",
+                isDefault = true
+            )
+        )
+        savedWorkspace.defaultBranch = main
+        val updated = workspaceRepository.save(savedWorkspace)
+
+        return WorkspaceResponse.fromEntity(updated)
     }
 }
 

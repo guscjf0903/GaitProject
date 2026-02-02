@@ -5,10 +5,20 @@
 ## 사전 준비
 
 - 민감 정보(DB 비밀번호 등)는 **반드시** `config/.env.*` 파일에만 두세요. (Git에 커밋되지 않도록 `.gitignore` 처리됨)
-- 새로 클론한 환경에서는 아래처럼 예시 파일을 복사해서 시작하세요:
+- 새로 클론한 환경에서는 `config/.env.local` 파일을 직접 만들어서 시작하세요:
 
 ```bash
-cp config/env.local.example config/.env.local
+mkdir -p config
+cat > config/.env.local <<'EOF'
+SPRING_PROFILES_ACTIVE=local
+
+# docker-compose.yml 과 Spring datasource가 함께 사용
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=gaitdb
+DB_USERNAME=postgres
+DB_PASSWORD=postgres
+EOF
 ```
 
 ## 앱 실행 (Spring Boot)

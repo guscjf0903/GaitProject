@@ -9,9 +9,11 @@ import org.springframework.validation.BindException
 import org.springframework.web.bind.MethodArgumentNotValidException
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.RestControllerAdvice
+import org.slf4j.LoggerFactory
 
 @RestControllerAdvice
 class GlobalExceptionHandler {
+    private val log = LoggerFactory.getLogger(GlobalExceptionHandler::class.java)
 
     @ExceptionHandler(NotFoundException::class)
     fun handleNotFound(ex: NotFoundException) =
@@ -68,10 +70,13 @@ class GlobalExceptionHandler {
             .body(ApiResponse.error(code = "BAD_REQUEST", message = "요청 본문(JSON) 파싱에 실패했습니다."))
 
     @ExceptionHandler(Exception::class)
-    fun handleException(ex: Exception) =
-        org.springframework.http.ResponseEntity
+    fun handleException(ex: Exception): org.springframework.http.ResponseEntity<ApiResponse<Any>> {
+        // 서버 내부 로그에는 상세를 남기고, 응답은 일반 메시지로 유지
+        log.error("Unhandled exception", ex)
+        return org.springframework.http.ResponseEntity
             .status(HttpStatus.INTERNAL_SERVER_ERROR)
             .body(ApiResponse.error(code = "INTERNAL_ERROR", message = "서버 오류가 발생했습니다."))
+    }
 }
 
 
