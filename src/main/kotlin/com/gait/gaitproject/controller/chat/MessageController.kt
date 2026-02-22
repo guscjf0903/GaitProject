@@ -36,12 +36,24 @@ class MessageController(
 
     @Operation(summary = "브랜치 타임라인 조회(after)", description = "branchId 기준 sequence 오름차순. after(배타), limit 기본 50")
     @GetMapping("/timeline")
+    @Suppress("UNUSED_PARAMETER")
     fun timelineAfter(
+        @PathVariable("workspaceId") _workspaceId: UUID,
         @PathVariable branchId: UUID,
         @RequestParam(name = "after", defaultValue = "0") afterSequenceExclusive: Long,
         @RequestParam(name = "limit", defaultValue = "50") limit: Int
     ): ResponseEntity<ApiResponse<List<MessageResponse>>> =
         ResponseEntity.ok(ApiResponse.ok(messageService.timelineAfter(branchId, afterSequenceExclusive, limit)))
+
+    @Operation(summary = "커밋 시점까지 타임라인 조회", description = "commitId(포함)까지의 메시지를 조회합니다. 다른 브랜치/미래 커밋 메시지는 포함되지 않습니다.")
+    @GetMapping("/timeline/at-commit")
+    fun timelineAtCommit(
+        @PathVariable workspaceId: UUID,
+        @PathVariable branchId: UUID,
+        @RequestParam(name = "commitId") commitId: UUID,
+        @RequestParam(name = "limit", defaultValue = "500") limit: Int
+    ): ResponseEntity<ApiResponse<List<MessageResponse>>> =
+        ResponseEntity.ok(ApiResponse.ok(messageService.timelineUpToCommit(workspaceId, branchId, commitId, limit)))
 }
 
 

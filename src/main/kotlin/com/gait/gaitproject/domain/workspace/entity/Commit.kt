@@ -60,7 +60,9 @@ class Commit(
      * NOTE: 실제 저장/조회는 pgvector용 Hibernate 타입을 붙여야 합니다.
      * 지금은 스키마 매핑(컬럼 정의)만 맞춰둡니다.
      */
-    @Column(name = "embedding", columnDefinition = "vector(1536)")
+    // 현재는 Hibernate 타입 매핑이 없어서 insert 시 타입 미스매치가 날 수 있음.
+    // 임베딩을 실제로 쓰기 전까지는 DB 기본값(NULL)에 맡기고, 추후 pgvector 타입을 붙입니다.
+    @Column(name = "embedding", columnDefinition = "vector(1536)", insertable = false, updatable = false)
     var embedding: String? = null,
 
     @Column(name = "input_tokens")

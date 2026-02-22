@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service
 @Service
 class AiRouter(
     @Autowired(required = false) private val stubAiService: StubAiService?,
+    @Autowired(required = false) private val openAiChatAiService: OpenAiChatAiService?,
     @Autowired(required = false) private val geminiFlashService: GeminiFlashService?,
     @Autowired(required = false) private val geminiProService: GeminiProService?
 ) {
@@ -23,19 +24,19 @@ class AiRouter(
     fun pick(planType: PlanType): AiService {
         return when (planType) {
             PlanType.FREE -> {
-                geminiFlashService ?: stubAiService ?: throw IllegalStateException(
-                    "AI 서비스가 설정되지 않았습니다. Gemini Flash 또는 Stub 서비스를 설정하세요."
+                openAiChatAiService ?: geminiFlashService ?: stubAiService ?: throw IllegalStateException(
+                    "AI 서비스가 설정되지 않았습니다. OpenAI/Gemini Flash/Stub 중 하나를 설정하세요."
                 )
             }
             PlanType.STANDARD -> {
                 // STANDARD: 기본은 Flash, 프리미엄 지갑 사용 시 Pro 가능 (향후 구현)
-                geminiFlashService ?: stubAiService ?: throw IllegalStateException(
+                openAiChatAiService ?: geminiFlashService ?: stubAiService ?: throw IllegalStateException(
                     "AI 서비스가 설정되지 않았습니다."
                 )
             }
             PlanType.MASTER -> {
                 // MASTER: Pro 우선, 없으면 Flash
-                geminiProService ?: geminiFlashService ?: stubAiService ?: throw IllegalStateException(
+                openAiChatAiService ?: geminiProService ?: geminiFlashService ?: stubAiService ?: throw IllegalStateException(
                     "AI 서비스가 설정되지 않았습니다."
                 )
             }

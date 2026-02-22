@@ -2,8 +2,11 @@ package com.gait.gaitproject.service.workspace
 
 import com.gait.gaitproject.domain.workspace.entity.Workspace
 import com.gait.gaitproject.domain.workspace.entity.Branch
+import com.gait.gaitproject.domain.workspace.entity.Commit
 import com.gait.gaitproject.domain.workspace.repository.BranchRepository
+import com.gait.gaitproject.domain.workspace.repository.CommitRepository
 import com.gait.gaitproject.domain.workspace.repository.WorkspaceRepository
+import com.gait.gaitproject.domain.common.enums.MergeType
 import com.gait.gaitproject.dto.workspace.WorkspaceCreateRequest
 import com.gait.gaitproject.dto.workspace.WorkspaceResponse
 import com.gait.gaitproject.service.common.NotFoundException
@@ -17,6 +20,7 @@ import java.util.UUID
 class WorkspaceService(
     private val workspaceRepository: WorkspaceRepository,
     private val branchRepository: BranchRepository,
+    private val commitRepository: CommitRepository,
     private val userService: UserService
 ) {
     fun get(workspaceId: UUID): Workspace =
@@ -47,6 +51,27 @@ class WorkspaceService(
                 isDefault = true
             )
         )
+
+        // ✅ 초기 커밋 1개 생성 (initProject)
+        // - 프론트가 새로고침 시 그래프를 서버 커밋 목록으로 복원할 수 있게
+        // - 프로젝트 시작점을 명확히 하기 위함
+        val initCommit = commitRepository.save(
+            Commit(
+                workspace = savedWorkspace,
+                branch = main,
+                parent = null,
+                createdByUser = null,
+                keyPoint = "initProject",
+                shortSummary = null,
+                longSummary = null,
+                mergeType = MergeType.NONE,
+                isMerge = false
+            )
+        )
+        main.baseCommit = initCommit
+        main.headCommit = initCommit
+        branchRepository.save(main)
+
         savedWorkspace.defaultBranch = main
         val updated = workspaceRepository.save(savedWorkspace)
 

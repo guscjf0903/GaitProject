@@ -4,6 +4,7 @@ import com.gait.gaitproject.domain.chat.repository.MessageRepository
 import com.gait.gaitproject.domain.common.enums.PlanType
 import com.gait.gaitproject.domain.workspace.entity.Commit
 import com.gait.gaitproject.domain.workspace.repository.BranchRepository
+import com.gait.gaitproject.domain.workspace.repository.CommitRepository
 import com.gait.gaitproject.service.common.NotFoundException
 import org.springframework.data.domain.PageRequest
 import org.springframework.stereotype.Service
@@ -31,7 +32,8 @@ data class TokenUsage(
 @Transactional(readOnly = true)
 class ContextBuilder(
     private val branchRepository: BranchRepository,
-    private val messageRepository: MessageRepository
+    private val messageRepository: MessageRepository,
+    private val commitRepository: CommitRepository
 ) {
     /**
      * 설계서 2.1 기준: 토큰 예산 할당에 따라 컨텍스트 구성
@@ -40,32 +42,37 @@ class ContextBuilder(
      * - Head Context: ~25%
      * - Lineage History: ~15%
      */
-    fun build(branchId: UUID, userQuery: String, planType: PlanType): BuiltContext {
+    fun build(
+        branchId: UUID,
+        contextCommitId: UUID? = null,
+        userQuery: String,
+        planType: PlanType
+    ): BuiltContext {
         val branch = branchRepository.findById(branchId).orElseThrow {
             NotFoundException("Branch not found. id=$branchId")
         }
+        val contextHeadCommit = resolveContextHeadCommit(branch, contextCommitId)
 
         val budget = TokenBudget.fromPlan(planType)
 
         // 1. System & Query (~10%)
         val systemPrompt = buildSystemPrompt()
         val systemQueryTokens = TokenEstimator.estimate(systemPrompt + userQuery)
-        val systemQueryText = "$systemPrompt\n\n[USER_QUERY]\n$userQuery"
 
         // 2. Recent History (~50%)
-        val recent = buildRecentMessages(branchId, budget.recentHistory)
+        val recent = buildRecentMessages(branchId, budget.recentHistory, contextCommitId)
         val recentTokens = TokenEstimator.estimateTotal(recent)
 
         // 3. Head Context (~25%)
         // 설계서: "25%를 모두 채우지 않았다면 이어져있는 조상 브랜치의 LongSummary를 가져와서 요약"
-        val headContext = buildHeadContext(branch, budget.headContext, recentTokens + systemQueryTokens)
+        val headContext = buildHeadContext(contextHeadCommit, budget.headContext)
         val headTokens = TokenEstimator.estimate(headContext.text)
 
         // 4. Lineage History (~15%, Adaptive Lineage Backfill)
         val usedSoFar = systemQueryTokens + recentTokens + headTokens
         val remainingBudget = budget.remainingAfter(usedSoFar)
         val lineage = buildAdaptiveLineage(
-            branch.headCommit?.parent,
+            contextHeadCommit?.parent,
             budget.lineageHistory,
             remainingBudget
         )
@@ -112,7 +119,28 @@ Follow these rules:
 - Use the conversation history to maintain continuity"""
     }
 
-    private fun buildRecentMessages(branchId: UUID, budget: Int): List<String> {
+    private fun resolveContextHeadCommit(
+        branch: com.gait.gaitproject.domain.workspace.entity.Branch,
+        contextCommitId: UUID?
+    ): Commit? {
+        if (contextCommitId == null) return branch.headCommit
+
+        val contextCommit = commitRepository.findById(contextCommitId).orElseThrow {
+            NotFoundException("Context commit not found. id=$contextCommitId")
+        }
+        if (contextCommit.branch.id != branch.id) {
+            throw IllegalArgumentException(
+                "Context commit does not belong to branch. contextCommitId=${contextCommit.id}, branchId=${branch.id}"
+            )
+        }
+        return contextCommit
+    }
+
+    private fun buildRecentMessages(branchId: UUID, budget: Int, contextCommitId: UUID?): List<String> {
+        // 체크아웃(타임트래블) 시점에서는 "미래 대화" 유입을 막기 위해
+        // 미커밋 RECENT 버퍼를 비우고, 지정한 커밋의 head/lineage만 사용합니다.
+        if (contextCommitId != null) return emptyList()
+
         val messages = messageRepository
             .findByBranch_IdAndCommitIsNullAndDeletedAtIsNullOrderBySequenceDesc(branchId, PageRequest.of(0, 50))
             .asReversed()
@@ -138,11 +166,10 @@ Follow these rules:
      * 설계서: "25%를 모두 채우지 않았다면 이어져있는 조상 브랜치의 LongSummary를 가져와서 요약"
      */
     private fun buildHeadContext(
-        branch: com.gait.gaitproject.domain.workspace.entity.Branch,
-        budget: Int,
-        usedSoFar: Int
+        headCommit: Commit?,
+        budget: Int
     ): HeadContextResult {
-        val headCommit = branch.headCommit ?: return HeadContextResult("")
+        headCommit ?: return HeadContextResult("")
         val headText = headCommit.longSummary ?: headCommit.shortSummary ?: headCommit.keyPoint ?: ""
         val headTokens = TokenEstimator.estimate(headText)
 

@@ -80,6 +80,7 @@ class ChatStreamController(
                 // 컨텍스트 조립 (토큰 예산 기반)
                 val ctx = contextBuilder.build(
                     branchId = branchId,
+                    contextCommitId = request.contextCommitId,
                     userQuery = request.content + injected,
                     planType = plan
                 )
@@ -108,7 +109,23 @@ class ChatStreamController(
                 )
                 emitter.complete()
             } catch (e: Exception) {
-                emitter.completeWithError(e)
+                try {
+                    val payload: Map<String, Any?> = mapOf(
+                        "message" to (e.message ?: "Unknown error"),
+                        "errorType" to e.javaClass.simpleName,
+                        "workspaceId" to workspaceId,
+                        "branchId" to branchId
+                    )
+                    emitter.send(
+                        SseEmitter.event()
+                            .name("ANSWER_ERROR")
+                            .data(ApiResponse.ok(SseEvent(type = "ANSWER_ERROR", data = payload)))
+                    )
+                } catch (_: Exception) {
+                    // ignore: 클라이언트가 이미 끊긴 경우 등
+                } finally {
+                    emitter.complete()
+                }
             }
         }
 

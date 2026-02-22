@@ -14,6 +14,13 @@ data class ChatStreamRequest(
     @field:NotNull(message = "branchId는 필수입니다.")
     val branchId: UUID?,
 
+    @field:Schema(
+        description = "컨텍스트 기준 커밋 ID(체크아웃/타임트래블 시점). null이면 브랜치 HEAD 기준",
+        example = "8c1c7a4b-5ec4-4d58-9eb7-f1f5f6d533c0",
+        nullable = true
+    )
+    val contextCommitId: UUID? = null,
+
     @field:Schema(description = "사용자 질문/메시지 내용", example = "이 브랜치의 최근 대화를 요약해줘")
     @field:NotBlank(message = "content는 필수입니다.")
     val content: String

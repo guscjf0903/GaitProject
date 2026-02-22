@@ -4,6 +4,17 @@ spring:
   profiles:
     active: ${SPRING_PROFILES_ACTIVE:local}
   ai:
+    model:
+      # 기본은 비활성화(OPENAI_API_KEY 없을 때도 서버가 떠야 함)
+      # OpenAI 사용 시: SPRING_AI_MODEL_CHAT=openai
+      chat: ${SPRING_AI_MODEL_CHAT:none}
+      embedding: ${SPRING_AI_MODEL_EMBEDDING:none}
+      image: ${SPRING_AI_MODEL_IMAGE:none}
+      moderation: ${SPRING_AI_MODEL_MODERATION:none}
+      audio:
+        # TTS는 현재 사용하지 않으므로 항상 비활성화
+        speech: ${SPRING_AI_MODEL_AUDIO_SPEECH:none}
+        transcription: ${SPRING_AI_MODEL_AUDIO_TRANSCRIPTION:none}
     # OpenAI 설정 (GPT-4o)
     openai:
       api-key: ${OPENAI_API_KEY:}

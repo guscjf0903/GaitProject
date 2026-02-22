@@ -19,7 +19,12 @@ data class BranchCreateRequest(
     @field:Schema(description = "설명", example = "기본 브랜치", nullable = true)
     val description: String? = null,
     @field:Schema(description = "기본 브랜치 여부", example = "false")
-    val isDefault: Boolean = false
+    val isDefault: Boolean = false,
+    @field:Schema(
+        description = "브랜치 시작 기준 커밋 ID(선택). 지정하면 해당 커밋을 base/head로 설정",
+        nullable = true
+    )
+    val baseCommitId: UUID? = null
 ) {
     fun toEntity(workspace: Workspace): Branch =
         Branch(

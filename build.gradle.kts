@@ -38,12 +38,11 @@ dependencies {
     // OpenAPI (Swagger UI) - Spring Boot 3.x + WebMVC
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.3.0")
     
-    // Spring AI (Gemini, OpenAI)
-    // 참고: Spring AI는 아직 정식 릴리즈가 아니므로 Milestone 저장소 필요
-    // 최신 버전 확인: https://repo.spring.io/ui/native/milestone/org/springframework/ai/
-    // TODO: Spring AI 의존성 추가 시 주석 해제
-    // implementation("org.springframework.ai:spring-ai-openai-spring-boot-starter:1.0.0-M4")
-    // implementation("org.springframework.ai:spring-ai-vertex-ai-gemini-spring-boot-starter:1.0.0-M4")
+    // Spring AI (OpenAI)
+    // - BOM으로 버전 일관성 유지
+    // - OpenAI ChatModel/StreamingChatModel 자동 구성(starter) 사용
+    implementation(platform("org.springframework.ai:spring-ai-bom:1.0.3"))
+    implementation("org.springframework.ai:spring-ai-starter-model-openai")
     
     // HTTP 클라이언트 (직접 API 호출용, Spring AI 대안)
     implementation("org.springframework.boot:spring-boot-starter-webflux") // WebClient 사용

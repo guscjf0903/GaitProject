@@ -20,6 +20,16 @@ interface MessageRepository : JpaRepository<Message, UUID> {
     fun findByBranch_IdAndCommitIsNullAndDeletedAtIsNullOrderBySequenceDesc(branchId: UUID, pageable: Pageable): List<Message>
 
     fun countByBranch_IdAndCommitIsNullAndDeletedAtIsNull(branchId: UUID): Long
+
+    fun findByBranch_IdAndCommit_IdInAndDeletedAtIsNullOrderBySequenceAsc(
+        branchId: UUID,
+        commitIds: List<UUID>
+    ): List<Message>
+
+    fun findByWorkspace_IdAndCommit_IdInAndDeletedAtIsNull(
+        workspaceId: UUID,
+        commitIds: List<UUID>
+    ): List<Message>
 }
 
 

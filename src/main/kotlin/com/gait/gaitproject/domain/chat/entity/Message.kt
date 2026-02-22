@@ -57,7 +57,10 @@ class Message(
      * pgvector: VECTOR(1536)
      * NOTE: 실제 저장/조회는 pgvector용 Hibernate 타입을 붙여야 합니다.
      */
-    @Column(name = "embedding", columnDefinition = "vector(1536)")
+    // 현재는 Hibernate 타입 매핑이 없어서 insert 시 타입 미스매치가 날 수 있음.
+    // (vector 컬럼에 varchar 파라미터를 바인딩하려고 시도)
+    // 임베딩을 실제로 쓰기 전까지는 DB 기본값(NULL)에 맡기고, 추후 pgvector 타입을 붙입니다.
+    @Column(name = "embedding", columnDefinition = "vector(1536)", insertable = false, updatable = false)
     var embedding: String? = null,
 
     @Column(name = "input_tokens")
