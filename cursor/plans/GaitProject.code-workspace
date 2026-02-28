@@ -1,0 +1,17 @@
+{
+	"folders": [
+		{
+			"path": "../../Desktop/GaitProject"
+		},
+		{
+			"path": "../../Desktop/GaitProject_frontend"
+		},
+		{
+			"path": ".."
+		}
+	],
+	"settings": {
+		"java.configuration.updateBuildConfiguration": "interactive",
+		"java.compile.nullAnalysis.mode": "automatic"
+	}
+}
