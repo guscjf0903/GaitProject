@@ -15,7 +15,7 @@ import org.springframework.stereotype.Service
 class GeminiProService : AiService {
     private val logger = LoggerFactory.getLogger(javaClass)
 
-    override fun streamAnswer(prompt: String, onChunk: (String) -> Unit) {
+    override fun streamAnswer(prompt: String, onChunk: (String) -> Unit): AiStreamResult {
         logger.warn("GeminiProService는 아직 구현되지 않았습니다. Spring AI 의존성을 추가하거나 직접 API 호출을 구현하세요.")
         // TODO: Spring AI ChatClient 또는 직접 HTTP 클라이언트로 Gemini Pro API 호출
         val answer = "Gemini Pro 응답 (구현 예정): ${prompt.take(200)}"
@@ -23,6 +23,14 @@ class GeminiProService : AiService {
             onChunk(chunk)
             Thread.sleep(30)
         }
+        
+        return AiStreamResult(
+            fullResponse = answer,
+            promptTokens = 0,
+            completionTokens = 0,
+            totalTokens = 0,
+            modelName = "gemini-1.5-pro"
+        )
     }
 }
 

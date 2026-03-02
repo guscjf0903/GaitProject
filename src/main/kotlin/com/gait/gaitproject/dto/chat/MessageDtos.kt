@@ -29,7 +29,15 @@ data class MessageSendRequest(
     @field:NotBlank(message = "content는 필수입니다.")
     val content: String,
     @field:Schema(description = "메타데이터(JSON 문자열 등)", nullable = true)
-    val metadata: String? = null
+    val metadata: String? = null,
+    
+    // AI 토큰 및 페이로드 관련 필드 추가
+    val rawPrompt: String? = null,
+    val rawResponse: String? = null,
+    val inputTokens: Int? = null,
+    val outputTokens: Int? = null,
+    val totalTokens: Int? = null,
+    val modelName: String? = null
 ) {
     fun toEntity(workspace: Workspace, branch: Branch, user: User?, sequence: Long): Message =
         Message(
@@ -39,7 +47,13 @@ data class MessageSendRequest(
             role = requireNotNull(role),
             content = content,
             metadata = metadata,
-            sequence = sequence
+            sequence = sequence,
+            rawPrompt = rawPrompt,
+            rawResponse = rawResponse,
+            inputTokens = inputTokens,
+            outputTokens = outputTokens,
+            totalTokens = totalTokens,
+            modelName = modelName
         )
 }
 
@@ -53,6 +67,12 @@ data class MessageResponse(
     val content: String,
     val metadata: String?,
     val sequence: Long,
+    val rawPrompt: String?,
+    val rawResponse: String?,
+    val inputTokens: Int?,
+    val outputTokens: Int?,
+    val totalTokens: Int?,
+    val modelName: String?,
     val createdAt: OffsetDateTime?,
     val updatedAt: OffsetDateTime?,
     val deletedAt: OffsetDateTime?
@@ -69,6 +89,12 @@ data class MessageResponse(
                 content = entity.content,
                 metadata = entity.metadata,
                 sequence = entity.sequence,
+                rawPrompt = entity.rawPrompt,
+                rawResponse = entity.rawResponse,
+                inputTokens = entity.inputTokens,
+                outputTokens = entity.outputTokens,
+                totalTokens = entity.totalTokens,
+                modelName = entity.modelName,
                 createdAt = entity.createdAt,
                 updatedAt = entity.updatedAt,
                 deletedAt = entity.deletedAt

@@ -11,13 +11,21 @@ import java.time.Duration
 @Service
 @ConditionalOnProperty(name = ["app.ai.use-stub"], havingValue = "true", matchIfMissing = false)
 class StubAiService : AiService {
-    override fun streamAnswer(prompt: String, onChunk: (String) -> Unit) {
+    override fun streamAnswer(prompt: String, onChunk: (String) -> Unit): AiStreamResult {
         val answer = "STUB_ANSWER: ${prompt.take(200)}"
         // 간단히 글자 단위로 스트리밍 흉내
         for (chunk in answer.chunked(20)) {
             onChunk(chunk)
             Thread.sleep(Duration.ofMillis(60).toMillis())
         }
+        
+        return AiStreamResult(
+            fullResponse = answer,
+            promptTokens = prompt.length,
+            completionTokens = answer.length,
+            totalTokens = prompt.length + answer.length,
+            modelName = "stub-model"
+        )
     }
 }
 

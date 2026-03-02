@@ -69,8 +69,17 @@ class Message(
     @Column(name = "output_tokens")
     var outputTokens: Int? = null,
 
+    @Column(name = "total_tokens")
+    var totalTokens: Int? = null,
+
     @Column(name = "model_name", length = 100)
     var modelName: String? = null,
+
+    @Column(name = "raw_prompt", columnDefinition = "text")
+    var rawPrompt: String? = null,
+
+    @Column(name = "raw_response", columnDefinition = "text")
+    var rawResponse: String? = null,
 
     @Column(name = "deleted_at")
     var deletedAt: OffsetDateTime? = null

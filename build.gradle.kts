@@ -8,7 +8,6 @@ plugins {
     kotlin("plugin.jpa") version "1.9.20"
     kotlin("plugin.allopen") version "1.9.20"
     kotlin("plugin.noarg") version "1.9.20"
-    kotlin("kapt") version "1.9.20"
 }
 
 group = "com.gait"
@@ -61,15 +60,6 @@ dependencies {
     implementation("org.postgresql:postgresql")
     runtimeOnly("com.h2database:h2") // 테스트용
     
-    // QueryDSL (Jakarta)
-    implementation("com.querydsl:querydsl-jpa:5.0.0:jakarta")
-    kapt("com.querydsl:querydsl-apt:5.0.0:jakarta")
-    
-    // Lombok
-    compileOnly("org.projectlombok:lombok")
-    annotationProcessor("org.projectlombok:lombok")
-    kapt("org.projectlombok:lombok")
-    
     // Test
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
@@ -98,13 +88,5 @@ noArg {
     annotation("jakarta.persistence.Entity")
     annotation("jakarta.persistence.MappedSuperclass")
     annotation("jakarta.persistence.Embeddable")
-}
-
-// Kapt 설정
-kapt {
-    correctErrorTypes = true
-    arguments {
-        arg("querydsl.entityAccessors", "true")
-    }
 }
 

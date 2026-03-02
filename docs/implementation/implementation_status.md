@@ -49,15 +49,20 @@
   - 컨텍스트 조립: `ContextBuilder`에서 토큰 예산 기반으로 System/Recent/Head/Lineage를 합쳐 prompt 생성
   - RAG 인터셉트: `RagInterceptor`는 현재 휴리스틱으로만 “stub retrieval text”를 주입
 
+#### 새롭게 구현 완료된 핵심 기능 (2026-03 업데이트)
+
+- **실제 LLM 호출 및 토큰 과금 파이프라인**
+  - Spring AI(`OpenAiChatAiService`)를 통한 실제 OpenAI API 연동 완료 (`app.ai.use-stub=false`).
+  - `streamUsage(true)` 옵션을 통해 스트리밍 마지막 청크에서 실제 소모된 토큰(`inputTokens`, `outputTokens`, `totalTokens`)을 추출하여 DB에 완벽히 로깅.
+  - 프론트엔드 의존성을 제거하고, 백엔드(`ChatStreamController`)가 사용자의 `rawPrompt`와 AI의 `rawResponse`를 직접 DB에 저장하도록 아키텍처 리팩토링.
+- **커밋 요약 자동 생성(AI)**
+  - 수동 커밋 및 자동 커밋 시 `CommitSummaryAiService`가 이전 대화 기록(최대 60개)과 부모의 `longSummary`를 분석하여 JSON 형태로 `keyPoint`, `shortSummary`, `longSummary`를 자동 생성.
+
 #### 아직 “실제 구현”이 아닌 부분(스텁/미완)
 
-- **실제 LLM 호출**
-  - 기본 설정은 `app.ai.use-stub=true`로 `StubAiService`가 “가짜 스트리밍”을 반환
-  - `GeminiFlashService`, `GeminiProService`는 현재 TODO 수준(실제 API 호출 미구현)
-- **커밋 요약 자동 생성(AI)**
-  - 커밋 생성은 가능하지만 요약(`keyPoint`, `shortSummary`, `longSummary`)을 실제 AI로 생성하지 않음
-  - 자동 커밋 트리거도 현재는 하드코딩 요약을 저장
+- **Gemini 모델 연동**
+  - `GeminiFlashService`, `GeminiProService`는 현재 TODO 수준(실제 API 호출 미구현). 향후 Spring AI Gemini 모듈 연동 필요.
 - **RAG/pgvector**
-  - 실제 임베딩 생성/저장/검색 파이프라인은 미구현
-  - 현재는 “검색했다는 힌트”만 prompt에 주입
+  - 실제 임베딩 생성/저장/검색 파이프라인은 미구현.
+  - 현재는 “검색했다는 힌트”만 prompt에 주입.
 
