@@ -33,7 +33,7 @@
 ### **1.2 기술 스택 (Tech Stack)**
 
 - **Frontend**
-    - Vue 3 (Composition API, <script setup>)
+    - Vue 3 (Composition API)
     - Pinia (전역 상태 관리: 유저, 플랜, 현재 브랜치, SSE 상태 등)
     - TailwindCSS (빠른 UI 레이아웃 및 스타일링)
     - SSE(EventSource)로 백엔드 스트리밍 구독
