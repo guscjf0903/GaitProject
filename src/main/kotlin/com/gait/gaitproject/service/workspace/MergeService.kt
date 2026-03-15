@@ -25,6 +25,7 @@ class MergeService(
     private val branchRepository: BranchRepository,
     private val commitRepository: CommitRepository,
     private val userRepository: UserRepository,
+    private val mergeContextBuilder: MergeContextBuilder,
     @Autowired(required = false) private val mergeSummaryAiService: MergeSummaryAiService?
 ) {
     @Transactional
@@ -52,53 +53,20 @@ class MergeService(
         }
 
         val userPlan = initiatedByUser?.plan ?: PlanType.FREE
-        val reqMergeType = request.mergeType ?: MergeType.FAST_FORWARD
+        val reqMergeType = request.mergeType ?: MergeType.SQUASH
 
-        // 권한 체크
-        if (userPlan == PlanType.FREE) {
-            throw IllegalArgumentException("Free plan cannot use Merge feature.")
-        }
-        if (reqMergeType == MergeType.DEEP && userPlan !in listOf(PlanType.STANDARD, PlanType.MASTER)) {
-             // Standard 도 제한적 허용이거나 기획상 Master/Pro만 허용. 
-             // 기획서 4.5: Master 플랜은 지능형 Deep Merge. Standard는 단순/FastForward.
-             if (userPlan == PlanType.STANDARD) {
-                 throw IllegalArgumentException("Standard plan cannot use DEEP merge. Please upgrade to Master plan.")
-             }
+        validateMergePolicy(userPlan, reqMergeType)
+
+        val context = mergeContextBuilder.build(fromBranch, toBranch, workspaceId, reqMergeType)
+
+        if (context.fromPath.isEmpty()) {
+            throw IllegalArgumentException("이미 최신 상태입니다. 병합할 새로운 커밋이 없습니다.")
         }
 
-        // 공통 조상 찾기 (단순화된 방식: toBranch 조상들을 Set에 넣고 fromBranch를 거슬러 올라감)
-        val toAncestors = mutableSetOf<UUID>()
-        var curTo: Commit? = toBranch.headCommit
-        while (curTo != null) {
-            toAncestors.add(curTo.id!!)
-            curTo = curTo.parent
-        }
-
-        var commonAncestor: Commit? = null
-        val fromPath = mutableListOf<Commit>()
-        var curFrom: Commit? = fromBranch.headCommit
-        while (curFrom != null) {
-            if (toAncestors.contains(curFrom.id!!)) {
-                commonAncestor = curFrom
-                break
-            }
-            fromPath.add(curFrom)
-            curFrom = curFrom.parent
-        }
-
-        fromPath.reverse() // 오래된 것부터 최신순
-
-        var finalMergeCommit: Commit? = null
-
-        when (reqMergeType) {
-            MergeType.FAST_FORWARD -> {
-                toBranch.headCommit = fromBranch.headCommit
-            }
+        val finalMergeCommit: Commit = when (reqMergeType) {
             MergeType.SQUASH -> {
-                if (fromPath.isEmpty()) throw IllegalArgumentException("Already up to date.")
-                
-                val combinedShort = fromPath.mapNotNull { it.shortSummary ?: it.keyPoint }.joinToString("\n- ")
-                
+                val aiSummary = mergeSummaryAiService?.summarizeSquash(context, request.notes)
+
                 val mergeCommit = Commit(
                     workspace = workspace,
                     branch = toBranch,
@@ -107,33 +75,14 @@ class MergeService(
                     mergeType = MergeType.SQUASH,
                     isMerge = true,
                     createdByUser = initiatedByUser,
-                    keyPoint = "Merged from ${fromBranch.name}",
-                    shortSummary = "Squash merged from ${fromBranch.name}",
-                    longSummary = "- $combinedShort"
+                    keyPoint = aiSummary?.keyPoint ?: "Merged from ${fromBranch.name}",
+                    shortSummary = aiSummary?.shortSummary ?: buildFallbackShortSummary(context),
+                    longSummary = aiSummary?.longSummary ?: buildFallbackLongSummary(context)
                 )
-                finalMergeCommit = commitRepository.save(mergeCommit)
-                toBranch.headCommit = finalMergeCommit
+                commitRepository.save(mergeCommit)
             }
             MergeType.DEEP -> {
-                if (fromPath.isEmpty()) throw IllegalArgumentException("Already up to date.")
-                
-                // toBranch의 조상들도 공통 조상 이후부터 가져옴
-                val toPath = mutableListOf<Commit>()
-                var cur: Commit? = toBranch.headCommit
-                while (cur != null && cur.id != commonAncestor?.id) {
-                    toPath.add(cur)
-                    cur = cur.parent
-                }
-                toPath.reverse()
-
-                val fromSummaries = fromPath.mapNotNull { it.longSummary ?: it.shortSummary ?: it.keyPoint }
-                val toSummaries = toPath.mapNotNull { it.longSummary ?: it.shortSummary ?: it.keyPoint }
-
-                val aiSummary = mergeSummaryAiService?.summarizeMerge(
-                    baseSummaries = toSummaries,
-                    targetSummaries = fromSummaries,
-                    userNote = request.notes
-                )
+                val aiSummary = mergeSummaryAiService?.summarizeDeep(context, request.notes)
 
                 val mergeCommit = Commit(
                     workspace = workspace,
@@ -147,12 +96,12 @@ class MergeService(
                     shortSummary = aiSummary?.shortSummary,
                     longSummary = aiSummary?.longSummary
                 )
-                finalMergeCommit = commitRepository.save(mergeCommit)
-                toBranch.headCommit = finalMergeCommit
+                commitRepository.save(mergeCommit)
             }
-            else -> throw IllegalArgumentException("Unsupported merge type: $reqMergeType")
+            else -> throw IllegalArgumentException("지원되지 않는 머지 타입입니다: $reqMergeType")
         }
 
+        toBranch.headCommit = finalMergeCommit
         branchRepository.save(toBranch)
 
         val entity = request.toEntity(
@@ -166,8 +115,51 @@ class MergeService(
         )
 
         val saved = mergeRepository.save(entity)
-        return MergeResponse.fromEntity(saved)
+        return MergeResponse.fromEntity(saved, fromBranch.name, toBranch.name)
+    }
+
+    private fun validateMergePolicy(userPlan: PlanType, mergeType: MergeType) {
+        if (userPlan == PlanType.FREE) {
+            throw IllegalArgumentException("Free 플랜에서는 머지 기능을 사용할 수 없습니다. 플랜을 업그레이드해 주세요.")
+        }
+        when (mergeType) {
+            MergeType.SQUASH -> {
+                // STANDARD, MASTER 모두 허용
+            }
+            MergeType.DEEP -> {
+                if (userPlan == PlanType.STANDARD) {
+                    throw IllegalArgumentException("Deep Merge는 Master 플랜 전용 기능입니다. 플랜을 업그레이드해 주세요.")
+                }
+            }
+            MergeType.FAST_FORWARD -> {
+                throw IllegalArgumentException("Fast-Forward 머지는 더 이상 지원되지 않습니다. Squash 또는 Deep Merge를 사용해 주세요.")
+            }
+            MergeType.NONE -> {
+                throw IllegalArgumentException("머지 타입을 선택해 주세요.")
+            }
+        }
+    }
+
+    private fun buildFallbackShortSummary(context: MergeContext): String {
+        val fromShort = context.fromMaterial.shortSummaries
+        return if (fromShort.isNotBlank()) "Squash merged:\n$fromShort" else "Squash merged from ${context.fromMaterial.branchName}"
+    }
+
+    private fun buildFallbackLongSummary(context: MergeContext): String {
+        val fromShort = context.fromMaterial.shortSummaries
+        val fromLong = context.fromMaterial.longSummaries
+        return buildString {
+            appendLine("[${context.fromMaterial.branchName} → ${context.toMaterial.branchName} Squash Merge]")
+            if (fromShort.isNotBlank()) {
+                appendLine()
+                appendLine("--- 주요 변경 사항 ---")
+                appendLine(fromShort)
+            }
+            if (fromLong.isNotBlank()) {
+                appendLine()
+                appendLine("--- 상세 내용 ---")
+                appendLine(fromLong)
+            }
+        }.trim()
     }
 }
-
-

@@ -57,6 +57,8 @@ data class MergeResponse(
     val workspaceId: UUID?,
     val fromBranchId: UUID?,
     val toBranchId: UUID?,
+    val fromBranchName: String?,
+    val toBranchName: String?,
     val fromCommitId: UUID?,
     val toCommitId: UUID?,
     val mergeCommitId: UUID?,
@@ -66,12 +68,14 @@ data class MergeResponse(
     val createdAt: OffsetDateTime?
 ) {
     companion object {
-        fun fromEntity(entity: Merge): MergeResponse =
+        fun fromEntity(entity: Merge, fromBranchName: String? = null, toBranchName: String? = null): MergeResponse =
             MergeResponse(
                 id = entity.id,
                 workspaceId = entity.workspace.id,
                 fromBranchId = entity.fromBranch.id,
                 toBranchId = entity.toBranch.id,
+                fromBranchName = fromBranchName ?: entity.fromBranch.name,
+                toBranchName = toBranchName ?: entity.toBranch.name,
                 fromCommitId = entity.fromCommit?.id,
                 toCommitId = entity.toCommit?.id,
                 mergeCommitId = entity.mergeCommit?.id,
