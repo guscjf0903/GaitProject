@@ -22,6 +22,9 @@ spring:
         options:
           model: ${OPENAI_MODEL:gpt-4o}
           temperature: ${OPENAI_TEMPERATURE:0.7}
+      embedding:
+        options:
+          model: ${OPENAI_EMBEDDING_MODEL:text-embedding-3-small}
     
     # Vertex AI Gemini 설정
     vertex:
@@ -62,3 +65,11 @@ app:
   ai:
     # AI 서비스 사용 여부 (false면 StubAiService 사용)
     use-stub: ${APP_AI_USE_STUB:true}
+    # 머지 요약용 모델 (Squash/Deep 각각 변경 가능)
+    merge-summary:
+      squash-model: ${APP_AI_MERGE_SQUASH_MODEL:gpt-4o-mini}
+      deep-model: ${APP_AI_MERGE_DEEP_MODEL:gpt-4o-mini}
+    # RAG 검색 설정
+    rag:
+      token-budget: ${APP_AI_RAG_TOKEN_BUDGET:2000}
+      max-results: ${APP_AI_RAG_MAX_RESULTS:5}

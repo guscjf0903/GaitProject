@@ -2,14 +2,18 @@ package com.gait.gaitproject.service.workspace
 
 import com.gait.gaitproject.domain.chat.repository.MessageRepository
 import com.gait.gaitproject.domain.user.repository.UserRepository
+import com.gait.gaitproject.domain.workspace.entity.Commit
 import com.gait.gaitproject.domain.workspace.repository.BranchRepository
 import com.gait.gaitproject.domain.workspace.repository.CommitRepository
+import com.gait.gaitproject.domain.workspace.repository.CommitVectorRepository
 import com.gait.gaitproject.domain.workspace.repository.WorkspaceRepository
 import com.gait.gaitproject.dto.workspace.CommitCreateRequest
 import com.gait.gaitproject.dto.workspace.CommitCreateResultResponse
 import com.gait.gaitproject.dto.workspace.CommitResponse
 import com.gait.gaitproject.service.ai.CommitSummaryAiService
+import com.gait.gaitproject.service.ai.EmbeddingService
 import com.gait.gaitproject.service.common.NotFoundException
+import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.domain.PageRequest
 import org.springframework.stereotype.Service
@@ -24,8 +28,11 @@ class CommitService(
     private val branchRepository: BranchRepository,
     private val messageRepository: MessageRepository,
     private val userRepository: UserRepository,
+    private val embeddingService: EmbeddingService,
+    private val commitVectorRepository: CommitVectorRepository,
     @Autowired(required = false) private val commitSummaryAiService: CommitSummaryAiService?
 ) {
+    private val logger = LoggerFactory.getLogger(javaClass)
     fun list(workspaceId: UUID, branchId: UUID, limit: Int): List<CommitResponse> {
         val workspace = workspaceRepository.findById(workspaceId).orElseThrow {
             NotFoundException("Workspace not found. id=$workspaceId")
@@ -115,10 +122,26 @@ class CommitService(
         pendingMessages.forEach { it.commit = commit }
         messageRepository.saveAll(pendingMessages)
 
+        // JPA 변경사항을 DB에 반영 후 JDBC 기반 임베딩 저장
+        commitRepository.flush()
+        generateAndSaveEmbedding(commit)
+
         return CommitCreateResultResponse(
             commit = CommitResponse.fromEntity(commit),
             attachedMessageCount = pendingMessages.size
         )
+    }
+
+    private fun generateAndSaveEmbedding(commit: Commit) {
+        if (!embeddingService.isAvailable()) return
+        try {
+            val textToEmbed = commit.longSummary ?: commit.shortSummary ?: commit.keyPoint
+            val embedding = embeddingService.embed(textToEmbed) ?: return
+            commitVectorRepository.saveEmbedding(commit.id!!, embedding)
+            logger.debug("Saved embedding for commit {}", commit.id)
+        } catch (e: Exception) {
+            logger.warn("Failed to save commit embedding: {}", e.message)
+        }
     }
 }
 

@@ -16,6 +16,7 @@ data class BuiltContext(
     val recentMessages: List<String>,
     val headLongSummary: String?,
     val lineageSummaries: List<String>,
+    val ragSection: String?,
     val combined: String,
     val tokenUsage: TokenUsage
 )
@@ -25,6 +26,7 @@ data class TokenUsage(
     val recentHistory: Int,
     val headContext: Int,
     val lineageHistory: Int,
+    val ragContext: Int,
     val total: Int
 )
 
@@ -46,7 +48,8 @@ class ContextBuilder(
         branchId: UUID,
         contextCommitId: UUID? = null,
         userQuery: String,
-        planType: PlanType
+        planType: PlanType,
+        ragSection: String? = null
     ): BuiltContext {
         val branch = branchRepository.findById(branchId).orElseThrow {
             NotFoundException("Branch not found. id=$branchId")
@@ -78,6 +81,8 @@ class ContextBuilder(
         )
         val lineageTokens = TokenEstimator.estimateTotal(lineage)
 
+        val ragTokens = TokenEstimator.estimate(ragSection ?: "")
+
         val combined = buildString {
             appendLine("[SYSTEM]")
             appendLine(systemPrompt)
@@ -88,6 +93,11 @@ class ContextBuilder(
             appendLine("[LINEAGE]")
             lineage.forEach { appendLine(it) }
             appendLine()
+            if (!ragSection.isNullOrBlank()) {
+                appendLine("[RAG_RESULTS]")
+                appendLine(ragSection)
+                appendLine()
+            }
             appendLine("[RECENT]")
             recent.forEach { appendLine(it) }
             appendLine()
@@ -100,13 +110,15 @@ class ContextBuilder(
             recentMessages = recent,
             headLongSummary = headContext.text.takeIf { it.isNotBlank() },
             lineageSummaries = lineage,
+            ragSection = ragSection,
             combined = combined,
             tokenUsage = TokenUsage(
                 systemQuery = systemQueryTokens,
                 recentHistory = recentTokens,
                 headContext = headTokens,
                 lineageHistory = lineageTokens,
-                total = systemQueryTokens + recentTokens + headTokens + lineageTokens
+                ragContext = ragTokens,
+                total = systemQueryTokens + recentTokens + headTokens + lineageTokens + ragTokens
             )
         )
     }

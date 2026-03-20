@@ -16,7 +16,7 @@ data class RagDecision(
     val injectedText: String?
 )
 
-@Service
+@Deprecated("Replaced by RagRouter + RagService + RagQuotaService")
 @Transactional(readOnly = true)
 class RagInterceptor(
     private val userRepository: UserRepository,
