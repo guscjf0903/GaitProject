@@ -1,0 +1,51 @@
+---
+description: 백엔드 Kotlin/Spring 코드 패턴 및 컨벤션 규칙
+globs: "**/*.kt"
+alwaysApply: false
+---
+
+# Backend Code Patterns
+
+## Entity 규칙
+- BaseTimeEntity를 상속 (createdAt, updatedAt 자동 관리)
+- docs/schema/db_schema.md와 1:1 매핑 필수
+- enum은 domain.common 패키지에 정의
+- ID 타입: UUID (gen_random_uuid)
+- soft delete: deletedAt 필드 사용 (nullable)
+
+## Repository 규칙
+- Spring Data JPA 기본 인터페이스 상속 (JpaRepository<Entity, UUID>)
+- 복잡한 쿼리가 필요한 경우 Custom Repository 패턴 사용
+  - {RepositoryName}Custom 인터페이스 + {RepositoryName}CustomImpl 구현체
+- QueryDSL 사용 시 Jakarta 패키지 필수 (javax가 아닌 jakarta)
+
+## Service 규칙
+- 트랜잭션 경계는 Service 레이어에서 @Transactional로 관리
+- 읽기 전용은 @Transactional(readOnly = true)
+- 외부 의존(AI 서비스 등)은 인터페이스로 추상화
+- 예외는 도메인 예외 클래스 사용 (NotFoundException 등)
+
+## Controller 규칙
+- REST 표준: POST(생성), GET(조회), PUT(수정), DELETE(삭제)
+- 응답은 반드시 ApiResponse<T> 래퍼 사용
+- 입력 검증은 @Valid + DTO validation 어노테이션
+- SSE 엔드포인트는 SseEmitter 반환
+
+## DTO 규칙
+- Request/Response 분리 (같은 클래스 공유 금지)
+- data class 사용, 불변(val) 우선
+- nullable 필드는 기본값 null로 선언
+- 패키지: dto.{도메인} (dto.auth, dto.workspace, dto.chat)
+
+## AI 서비스 패턴
+- AiRouter가 플랜/기능에 따라 구현체 분기
+- app.ai.use-stub=true → StubAiService
+- app.ai.use-stub=false → OpenAiChatAiService / GeminiFlashService 등
+- 새 AI 서비스 추가 시 반드시 AiService 인터페이스 구현
+
+## 네이밍 컨벤션
+- Entity: 단수형 (User, Workspace, Branch, Commit, Message)
+- Repository: {Entity}Repository
+- Service: {도메인}Service (WorkspaceService, ChatService)
+- Controller: {도메인}Controller
+- DTO: {동작}{대상}Request / {대상}Response

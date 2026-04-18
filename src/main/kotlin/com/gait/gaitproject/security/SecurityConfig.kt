@@ -26,6 +26,7 @@ class SecurityConfig(
                 auth
                     .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll() // CORS preflight
                     .requestMatchers("/api/auth/**").permitAll()
+                    .requestMatchers("/actuator/health", "/actuator/health/**", "/actuator/info").permitAll()
                     // Spring Boot error endpoint (token invalid 등 sendError 시 /error로 포워딩될 수 있음)
                     .requestMatchers("/error").permitAll()
                     // /api/chat/stream은 인증 필요 (JWT principal 사용)

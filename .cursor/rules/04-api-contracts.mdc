@@ -1,0 +1,48 @@
+---
+description: API 계약 및 DTO 설계 규칙
+globs: "**/controller/**/*.kt,**/dto/**/*.kt"
+alwaysApply: false
+---
+
+# API Contract Rules
+
+## API 설계 원칙
+- RESTful 경로 규칙 준수
+- 리소스 중심 URL: /api/{리소스}/{id}/{하위리소스}
+- 응답 코드: 200(조회), 201(생성), 204(삭제), 400(입력오류), 401(인증), 403(권한), 404(없음), 409(충돌)
+
+## 응답 형식
+모든 API 응답은 ApiResponse<T> 래퍼를 사용한다:
+```json
+{
+  "success": true,
+  "data": { ... },
+  "error": null
+}
+```
+
+에러 응답:
+```json
+{
+  "success": false,
+  "data": null,
+  "error": {
+    "code": "NOT_FOUND",
+    "message": "브랜치를 찾을 수 없습니다"
+  }
+}
+```
+
+## SSE 응답 (채팅 스트리밍)
+- Content-Type: text/event-stream
+- 이벤트 타입과 페이로드는 docs/specs/sse_protocol.md를 따른다
+- ANSWER_CHUNK, ANSWER_DONE, ANSWER_ERROR, RAG_STATUS
+
+## API 변경 시 규칙
+1. 기존 엔드포인트의 경로 변경 금지 (하위 호환 필수)
+2. 새 필드 추가 시 nullable 또는 기본값 필수
+3. 필드 제거 시 deprecated 단계를 거친다
+4. 변경 후 docs/specs/api_contract.md 즉시 갱신
+
+## 상세 계약서
+전체 API 목록과 DTO 스펙은 docs/specs/api_contract.md를 참고한다.

@@ -1,0 +1,46 @@
+---
+description: 백엔드 테스트 작성 규칙 및 전략
+globs: "**/src/test/**/*.kt"
+alwaysApply: false
+---
+
+# Backend Testing Rules
+
+## 테스트 계층
+1. **Unit Test**: Service 로직 — MockK/Mockito로 의존성 격리
+2. **Repository Test**: @DataJpaTest + H2 — JPA 쿼리 검증
+3. **Integration Test**: @SpringBootTest — API 전체 흐름 검증
+4. **Controller Test**: @WebMvcTest + MockMvc — 컨트롤러 단위 검증
+
+## 필수 테스트 대상
+- 모든 Service의 public 메서드
+- 비즈니스 규칙이 있는 로직 (커밋 생성, 머지, 플랜 검증 등)
+- 예외/에러 케이스 (빈 데이터, 권한 없음, 플랜 제한 등)
+- JWT 인증/인가 경계
+
+## 테스트 네이밍 규칙
+- 클래스: {대상}Test.kt (예: CommitServiceTest.kt)
+- 메서드: `should {기대결과} when {조건}`
+- 예시:
+  - `should create commit when pending messages exist`
+  - `should throw exception when no pending messages`
+  - `should return 401 when token is missing`
+
+## 테스트 환경
+- Profile: test (application-test.yml)
+- DB: H2 인메모리
+- AI: app.ai.use-stub=true (항상 스텁 사용)
+- 시간/ID 의존 로직은 파라미터 주입으로 테스트 가능하게 설계
+
+## 테스트 작성 원칙
+- Given-When-Then 구조 사용
+- 하나의 테스트 메서드에서 하나의 동작만 검증
+- 해피 패스와 실패 케이스를 모두 작성
+- 테스트 데이터는 테스트 내에서 생성 (외부 의존 없이)
+- 구체적 시나리오는 docs/testing/test_scenarios.md 참고
+
+## 테스트 실행
+```bash
+./gradlew test                    # 전체 테스트
+./gradlew test --tests "*.CommitServiceTest"  # 특정 클래스
+```

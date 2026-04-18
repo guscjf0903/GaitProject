@@ -1,0 +1,26 @@
+---
+description: 모든 코딩 작업 시작 전 프로젝트 컨텍스트를 로드하는 규칙
+globs:
+alwaysApply: true
+---
+
+# Context Loading Protocol
+
+모든 문서는 워크스페이스 루트의 **Docs/** 폴더에 통합되어 있다.
+
+## 필수 로드 (항상)
+1. `Docs/agent/COMMON_INSTRUCTIONS.md` → 공통 행동 규약
+2. `Docs/implementation/implementation_status.md` → 현재 구현 상태
+
+## 기능 구현 시 추가 로드
+3. `Docs/specs/backend_spec.md` → 해당 기능의 비즈니스 로직
+4. `Docs/specs/api_contract.md` → API 입출력 스펙
+5. `Docs/schema/db_schema.md` → 관련 테이블 구조
+
+## 채팅/SSE 작업 시
+6. `Docs/specs/sse_protocol.md` → SSE 이벤트 프로토콜
+
+## 작업 완료 후 문서 갱신 확인
+- 새 기능 완성 → Docs/implementation/implementation_status.md 업데이트
+- 버그 수정 → Docs/troubleshooting/YYYY-MM.md 기록
+- API 변경 → Docs/specs/api_contract.md 갱신

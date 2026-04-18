@@ -1,0 +1,94 @@
+nameOverride: ""
+fullnameOverride: ""
+
+backend:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: gait-backend
+    tag: latest
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 8080
+  config:
+    SPRING_PROFILES_ACTIVE: local
+    SERVER_PORT: "8080"
+    DB_HOST: host.k3d.internal
+    DB_PORT: "5432"
+    DB_NAME: gaitdb
+    DB_USERNAME: postgres
+    DB_SCHEMA: public
+    DB_SSL_MODE: disable
+    DB_POOL_SIZE: "20"
+    DB_POOL_MIN_IDLE: "10"
+    JPA_DDL_AUTO: validate
+    JPA_SHOW_SQL: "true"
+    LOG_LEVEL_ROOT: INFO
+    LOG_LEVEL_APP: INFO
+    LOG_LEVEL_SQL: DEBUG
+    LOG_LEVEL_BINDER: WARN
+    APP_AI_USE_STUB: "true"
+    APP_AI_RAG_TOKEN_BUDGET: "2000"
+    APP_AI_RAG_MAX_RESULTS: "5"
+    GOOGLE_PROJECT_ID: ""
+    GOOGLE_LOCATION: us-central1
+    GEMINI_ENABLED: "false"
+    GEMINI_PRO_ENABLED: "false"
+  secret:
+    create: true
+    existingSecret: ""
+    values:
+      DB_PASSWORD: postgres
+      APP_JWT_SECRET: change-me-to-a-very-long-secret-key-please-32bytes
+      OPENAI_API_KEY: ""
+      GOOGLE_CREDENTIALS_PATH: ""
+  probes:
+    liveness:
+      path: /actuator/health/liveness
+      initialDelaySeconds: 20
+      periodSeconds: 10
+    readiness:
+      path: /actuator/health/readiness
+      initialDelaySeconds: 15
+      periodSeconds: 10
+    startup:
+      path: /actuator/health/liveness
+      failureThreshold: 30
+      periodSeconds: 10
+  resources: {}
+
+frontend:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: gait-frontend
+    tag: latest
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 8080
+  probes:
+    path: /healthz
+    initialDelaySeconds: 5
+    periodSeconds: 10
+  resources: {}
+
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: 10m
+    nginx.ingress.kubernetes.io/proxy-buffering: "off"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+  host: ""
+  frontendPath: /
+  frontendPathType: Prefix
+  backendPaths:
+    - /api
+    - /actuator
+    - /v3/api-docs
+    - /swagger-ui
+    - /swagger-ui.html
+  backendPathType: Prefix

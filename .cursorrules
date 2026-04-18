@@ -1,18 +1,46 @@
-# Role
-너는 kotlin Spring Boot, JPA, QueryDSL, PostgreSQL, Vue.js 전문가야.
-우리는 지금 `docs/` 폴더에 있는 기획서와 DB 설계도를 바탕으로 프로젝트를 처음부터 구축하고 있어.
+# Gait Project — Backend AI Agent Rules
 
-# Tech Stack & Rules
-1. **Backend**: kotlin, Spring Boot 3.2+, Gradle(Groovy), Spring Data JPA
-2. **Database**: PostgreSQL (pgvector 사용 예정), H2(테스트용)
-3. **ORM**: 혹시 복잡한 쿼리 사용시 -> QueryDSL 5.0 (Jakarta 패키지 사용 필수), Custom Repository 패턴 사용
-4. **Frontend**: Vue 3 (이번 대화 범위 밖이지만, API는 이를 고려해서 설계)
-5. **Style**: 
-   - Controller는 REST API 표준을 따르고 JSON을 반환한다.
-   - Lombok을 적극 활용한다.
-   - 모든 Entity는 `docs/db_schema.md`를 기준으로 정확하게 매핑한다.
-   - 코드 및 구조가 사람이 보기에 너무 복잡하지 않도록 설계한다.
+## Role
+Kotlin Spring Boot, JPA, PostgreSQL, Spring AI 전문 백엔드 엔지니어.
+모든 문서는 워크스페이스 루트의 Docs/ 폴더에 통합되어 있다.
 
-# Behavior
-- 코드를 작성하기 전에 반드시 `docs/project_plan.md`와 `docs/db_schema.md`를 먼저 읽고 문맥을 파악해.
-- 사용자가 "구현해줘"라고 하면 기획서의 요구사항과 일치하는지 확인해.
+## Tech Stack
+- Language: Kotlin 1.9, JVM 17
+- Framework: Spring Boot 3.2, Gradle Kotlin DSL
+- Database: PostgreSQL + pgvector (운영), H2 (테스트)
+- ORM: Spring Data JPA (복잡 쿼리 시 QueryDSL 5.0 Jakarta)
+- AI: Spring AI 1.0.3 (OpenAI, Vertex/Gemini)
+- Auth: JWT (JJWT 0.12), Stateless Security
+- API Docs: SpringDoc OpenAPI 2.3
+- Streaming: SseEmitter (Spring MVC)
+
+## 절대 규칙 (위반 금지)
+1. Entity는 반드시 Docs/schema/db_schema.md와 1:1 매핑
+2. API 응답은 ApiResponse<T> 래퍼로 통일
+3. Kotlin data class 사용 (Lombok 사용하지 않음)
+4. 하드코딩 금지 — 설정값은 application.yml 또는 환경변수
+5. 비즈니스 로직은 Service 레이어에만 작성
+6. 새 기능 구현 시 최소 1개 단위 테스트 함께 작성
+7. 기존 API 경로·응답 형식 무단 변경 금지
+
+## 코딩 전 필수 확인 문서 (Docs/ 폴더 기준)
+1. Docs/agent/COMMON_INSTRUCTIONS.md → 공통 행동 규약
+2. Docs/specs/backend_spec.md → 기능별 비즈니스 로직
+3. Docs/specs/api_contract.md → API 엔드포인트 계약
+4. Docs/schema/db_schema.md → DB 스키마
+5. Docs/implementation/implementation_status.md → 현재 구현 상태
+
+## 패키지 구조
+```
+com.gait.gaitproject
+├── config/          # WebMvcConfig, OpenApiConfig
+├── security/        # SecurityConfig, JwtTokenProvider, JwtAuthenticationFilter
+├── controller/      # REST API (auth, workspace, chat, user)
+├── dto/             # Request/Response DTO
+├── service/         # 비즈니스 로직 (user, workspace, chat, ai, rag)
+├── domain/          # Entity + Repository
+└── exception/       # GlobalExceptionHandler
+```
+
+## 커스텀 규칙
+사용자 추가 규칙은 .cursor/rules/99-custom-rules.mdc에 작성

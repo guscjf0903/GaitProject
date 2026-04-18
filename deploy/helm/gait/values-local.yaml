@@ -1,0 +1,22 @@
+backend:
+  image:
+    repository: gait-backend-phase1-test
+    tag: latest
+  config:
+    DB_HOST: host.k3d.internal
+    DB_PORT: "5432"
+    DB_NAME: gaitdb
+    DB_USERNAME: postgres
+    APP_AI_USE_STUB: "true"
+  secret:
+    values:
+      DB_PASSWORD: postgres
+      APP_JWT_SECRET: change-me-to-a-very-long-secret-key-please-32bytes
+
+frontend:
+  image:
+    repository: gait-frontend-phase1-local
+    tag: latest
+
+ingress:
+  host: ""

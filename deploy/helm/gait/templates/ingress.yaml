@@ -1,0 +1,38 @@
+{{- if .Values.ingress.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "gait.fullname" . }}
+  labels:
+    {{- include "gait.labels" . | nindent 4 }}
+  annotations:
+    {{- range $key, $value := .Values.ingress.annotations }}
+    {{ $key }}: {{ $value | quote }}
+    {{- end }}
+spec:
+  {{- if .Values.ingress.className }}
+  ingressClassName: {{ .Values.ingress.className }}
+  {{- end }}
+  rules:
+    - {{- if .Values.ingress.host }}
+      host: {{ .Values.ingress.host | quote }}
+      {{- end }}
+      http:
+        paths:
+          {{- range .Values.ingress.backendPaths }}
+          - path: {{ . }}
+            pathType: {{ $.Values.ingress.backendPathType }}
+            backend:
+              service:
+                name: {{ include "gait.backend.name" $ }}
+                port:
+                  number: {{ $.Values.backend.service.port }}
+          {{- end }}
+          - path: {{ .Values.ingress.frontendPath }}
+            pathType: {{ .Values.ingress.frontendPathType }}
+            backend:
+              service:
+                name: {{ include "gait.frontend.name" . }}
+                port:
+                  number: {{ .Values.frontend.service.port }}
+{{- end }}
