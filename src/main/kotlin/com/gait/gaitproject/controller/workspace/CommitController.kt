@@ -3,12 +3,15 @@ package com.gait.gaitproject.controller.workspace
 import com.gait.gaitproject.dto.common.ApiResponse
 import com.gait.gaitproject.dto.workspace.CommitCreateRequest
 import com.gait.gaitproject.dto.workspace.CommitCreateResultResponse
+import com.gait.gaitproject.security.UserPrincipal
+import com.gait.gaitproject.service.common.ForbiddenException
 import com.gait.gaitproject.service.workspace.CommitService
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.security.SecurityRequirement
 import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
 import org.springframework.http.ResponseEntity
+import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
@@ -30,9 +33,10 @@ class CommitController(
     fun list(
         @PathVariable workspaceId: UUID,
         @PathVariable branchId: UUID,
+        @AuthenticationPrincipal principal: UserPrincipal,
         @RequestParam(name = "limit", defaultValue = "200") limit: Int
     ): ResponseEntity<ApiResponse<List<com.gait.gaitproject.dto.workspace.CommitResponse>>> =
-        ResponseEntity.ok(ApiResponse.ok(commitService.list(workspaceId, branchId, limit)))
+        ResponseEntity.ok(ApiResponse.ok(commitService.list(workspaceId, branchId, principal.userId, limit)))
 
     @Operation(summary = "커밋 생성", description = "브랜치의 최근 메시지를 커밋에 부착하고, 커밋 요약 정보를 저장합니다(서비스 구현에 따름).")
     @PostMapping
@@ -40,16 +44,20 @@ class CommitController(
         @PathVariable workspaceId: UUID,
         @PathVariable branchId: UUID,
         @Valid @RequestBody request: CommitCreateRequest,
+        @AuthenticationPrincipal principal: UserPrincipal,
         @RequestParam(required = false) createdByUserId: UUID?
-    ): ResponseEntity<ApiResponse<CommitCreateResultResponse>> =
-        ResponseEntity.ok(
+    ): ResponseEntity<ApiResponse<CommitCreateResultResponse>> {
+        if (createdByUserId != null && createdByUserId != principal.userId) {
+            throw ForbiddenException("다른 사용자로 커밋을 생성할 수 없습니다.")
+        }
+
+        return ResponseEntity.ok(
             ApiResponse.ok(
                 commitService.create(
                     request.copy(workspaceId = workspaceId, branchId = branchId),
-                    createdByUserId
+                    principal.userId
                 )
             )
         )
+    }
 }
-
-

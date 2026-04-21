@@ -1,7 +1,9 @@
 package com.gait.gaitproject.exception
 
 import com.gait.gaitproject.dto.common.ApiResponse
+import com.gait.gaitproject.service.common.ForbiddenException
 import com.gait.gaitproject.service.common.NotFoundException
+import com.gait.gaitproject.service.common.UnauthorizedException
 import jakarta.validation.ConstraintViolationException
 import org.springframework.http.HttpStatus
 import org.springframework.http.converter.HttpMessageNotReadableException
@@ -20,6 +22,18 @@ class GlobalExceptionHandler {
         org.springframework.http.ResponseEntity
             .status(HttpStatus.NOT_FOUND)
             .body(ApiResponse.error(code = "NOT_FOUND", message = ex.message ?: "Not Found"))
+
+    @ExceptionHandler(UnauthorizedException::class)
+    fun handleUnauthorized(ex: UnauthorizedException) =
+        org.springframework.http.ResponseEntity
+            .status(HttpStatus.UNAUTHORIZED)
+            .body(ApiResponse.error(code = "UNAUTHORIZED", message = ex.message ?: "Unauthorized"))
+
+    @ExceptionHandler(ForbiddenException::class)
+    fun handleForbidden(ex: ForbiddenException) =
+        org.springframework.http.ResponseEntity
+            .status(HttpStatus.FORBIDDEN)
+            .body(ApiResponse.error(code = "FORBIDDEN", message = ex.message ?: "Forbidden"))
 
     @ExceptionHandler(IllegalArgumentException::class)
     fun handleIllegalArgument(ex: IllegalArgumentException) =
@@ -78,7 +92,6 @@ class GlobalExceptionHandler {
             .body(ApiResponse.error(code = "INTERNAL_ERROR", message = "서버 오류가 발생했습니다."))
     }
 }
-
 
 
 

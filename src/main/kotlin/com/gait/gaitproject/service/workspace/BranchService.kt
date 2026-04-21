@@ -8,6 +8,7 @@ import com.gait.gaitproject.domain.workspace.repository.CommitRepository
 import com.gait.gaitproject.domain.workspace.repository.WorkspaceRepository
 import com.gait.gaitproject.dto.workspace.BranchCreateRequest
 import com.gait.gaitproject.dto.workspace.BranchResponse
+import com.gait.gaitproject.service.access.AccessGuard
 import com.gait.gaitproject.service.common.NotFoundException
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -18,23 +19,24 @@ import java.util.UUID
 class BranchService(
     private val branchRepository: BranchRepository,
     private val workspaceRepository: WorkspaceRepository,
-    private val commitRepository: CommitRepository
+    private val commitRepository: CommitRepository,
+    private val accessGuard: AccessGuard,
 ) {
     fun get(branchId: UUID): Branch =
         branchRepository.findById(branchId).orElseThrow {
             NotFoundException("Branch not found. id=$branchId")
         }
 
-    fun listByWorkspace(workspaceId: UUID): List<BranchResponse> =
-        branchRepository.findByWorkspace_IdAndDeletedAtIsNullOrderByCreatedAtAsc(workspaceId)
+    fun listByWorkspace(workspaceId: UUID, authenticatedUserId: UUID): List<BranchResponse> {
+        accessGuard.requireWorkspaceOwner(workspaceId, authenticatedUserId)
+        return branchRepository.findByWorkspace_IdAndDeletedAtIsNullOrderByCreatedAtAsc(workspaceId)
             .map(BranchResponse.Companion::fromEntity)
+    }
 
-    @Transactional 
-    fun create(request: BranchCreateRequest): BranchResponse {
+    @Transactional
+    fun create(request: BranchCreateRequest, authenticatedUserId: UUID): BranchResponse {
         val workspaceId = requireNotNull(request.workspaceId)
-        val workspace = workspaceRepository.findById(workspaceId).orElseThrow {
-            NotFoundException("Workspace not found. id=$workspaceId")
-        }
+        val workspace = accessGuard.requireWorkspaceOwner(workspaceId, authenticatedUserId).workspace
 
         branchRepository.findByWorkspace_IdAndNameAndDeletedAtIsNull(workspaceId, request.name)?.let {
             throw IllegalArgumentException("이미 존재하는 브랜치입니다. name=${request.name}")
@@ -95,5 +97,3 @@ class BranchService(
         return BranchResponse.Companion.fromEntity(saved)
     }
 }
-
-

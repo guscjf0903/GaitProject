@@ -38,6 +38,7 @@ out/
 .DS_Store
 ### Application ###
 application-local.yml
+!src/main/resources/application-local.yml
 application-local.properties
 *.log
 ### Environment Variables ###

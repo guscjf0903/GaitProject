@@ -3,12 +3,14 @@ package com.gait.gaitproject.controller.chat
 import com.gait.gaitproject.dto.common.ApiResponse
 import com.gait.gaitproject.dto.chat.MessageResponse
 import com.gait.gaitproject.dto.chat.MessageSendRequest
+import com.gait.gaitproject.security.UserPrincipal
 import com.gait.gaitproject.service.chat.MessageService
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.security.SecurityRequirement
 import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
 import org.springframework.http.ResponseEntity
+import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
@@ -30,30 +32,39 @@ class MessageController(
     fun send(
         @PathVariable workspaceId: UUID,
         @PathVariable branchId: UUID,
-        @Valid @RequestBody request: MessageSendRequest
+        @Valid @RequestBody request: MessageSendRequest,
+        @AuthenticationPrincipal principal: UserPrincipal,
     ): ResponseEntity<ApiResponse<MessageResponse>> =
-        ResponseEntity.ok(ApiResponse.ok(messageService.send(request.copy(workspaceId = workspaceId, branchId = branchId))))
+        ResponseEntity.ok(
+            ApiResponse.ok(
+                messageService.send(
+                    request = request.copy(workspaceId = workspaceId, branchId = branchId),
+                    authenticatedUserId = principal.userId,
+                )
+            )
+        )
 
     @Operation(summary = "브랜치 타임라인 조회(after)", description = "branchId 기준 sequence 오름차순. after(배타), limit 기본 50")
     @GetMapping("/timeline")
     @Suppress("UNUSED_PARAMETER")
     fun timelineAfter(
-        @PathVariable("workspaceId") _workspaceId: UUID,
+        @PathVariable("workspaceId") workspaceId: UUID,
         @PathVariable branchId: UUID,
+        @AuthenticationPrincipal principal: UserPrincipal,
         @RequestParam(name = "after", defaultValue = "0") afterSequenceExclusive: Long,
         @RequestParam(name = "limit", defaultValue = "50") limit: Int
     ): ResponseEntity<ApiResponse<List<MessageResponse>>> =
-        ResponseEntity.ok(ApiResponse.ok(messageService.timelineAfter(branchId, afterSequenceExclusive, limit)))
+        ResponseEntity.ok(ApiResponse.ok(messageService.timelineAfter(workspaceId, branchId, principal.userId, afterSequenceExclusive, limit)))
 
     @Operation(summary = "커밋 시점까지 타임라인 조회", description = "commitId(포함)까지의 메시지를 조회합니다. 다른 브랜치/미래 커밋 메시지는 포함되지 않습니다.")
     @GetMapping("/timeline/at-commit")
     fun timelineAtCommit(
         @PathVariable workspaceId: UUID,
         @PathVariable branchId: UUID,
+        @AuthenticationPrincipal principal: UserPrincipal,
         @RequestParam(name = "commitId") commitId: UUID,
         @RequestParam(name = "limit", defaultValue = "500") limit: Int
     ): ResponseEntity<ApiResponse<List<MessageResponse>>> =
-        ResponseEntity.ok(ApiResponse.ok(messageService.timelineUpToCommit(workspaceId, branchId, commitId, limit)))
+        ResponseEntity.ok(ApiResponse.ok(messageService.timelineUpToCommit(workspaceId, branchId, commitId, principal.userId, limit)))
 }
-
 

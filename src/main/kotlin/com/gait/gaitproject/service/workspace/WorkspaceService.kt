@@ -9,6 +9,7 @@ import com.gait.gaitproject.domain.workspace.repository.WorkspaceRepository
 import com.gait.gaitproject.domain.common.enums.MergeType
 import com.gait.gaitproject.dto.workspace.WorkspaceCreateRequest
 import com.gait.gaitproject.dto.workspace.WorkspaceResponse
+import com.gait.gaitproject.service.access.AccessGuard
 import com.gait.gaitproject.service.common.NotFoundException
 import com.gait.gaitproject.service.user.UserService
 import org.springframework.stereotype.Service
@@ -21,6 +22,7 @@ class WorkspaceService(
     private val workspaceRepository: WorkspaceRepository,
     private val branchRepository: BranchRepository,
     private val commitRepository: CommitRepository,
+    private val accessGuard: AccessGuard,
     private val userService: UserService
 ) {
     fun get(workspaceId: UUID): Workspace =
@@ -28,16 +30,19 @@ class WorkspaceService(
             NotFoundException("Workspace not found. id=$workspaceId")
         }
 
-    fun getResponse(workspaceId: UUID): WorkspaceResponse =
-        WorkspaceResponse.fromEntity(get(workspaceId))
+    fun getOwnedResponse(workspaceId: UUID, authenticatedUserId: UUID): WorkspaceResponse =
+        WorkspaceResponse.fromEntity(accessGuard.requireWorkspaceOwner(workspaceId, authenticatedUserId).workspace)
 
-    fun listByUser(userId: UUID): List<WorkspaceResponse> =
-        workspaceRepository.findByUser_IdAndDeletedAtIsNullOrderByCreatedAtAsc(userId)
+    fun listByUser(requestedUserId: UUID, authenticatedUserId: UUID): List<WorkspaceResponse> {
+        accessGuard.requireSelf(requestedUserId, authenticatedUserId)
+        return workspaceRepository.findByUser_IdAndDeletedAtIsNullOrderByCreatedAtAsc(authenticatedUserId)
             .map(WorkspaceResponse::fromEntity)
+    }
 
     @Transactional
-    fun create(request: WorkspaceCreateRequest): WorkspaceResponse {
-        val user = userService.get(requireNotNull(request.userId))
+    fun create(request: WorkspaceCreateRequest, authenticatedUserId: UUID): WorkspaceResponse {
+        accessGuard.requireSelf(requireNotNull(request.userId), authenticatedUserId)
+        val user = userService.get(authenticatedUserId)
         val entity = request.toEntity(user)
         val savedWorkspace = workspaceRepository.save(entity)
 
@@ -78,5 +83,4 @@ class WorkspaceService(
         return WorkspaceResponse.fromEntity(updated)
     }
 }
-
 

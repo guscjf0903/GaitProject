@@ -30,10 +30,8 @@ class MergeController(
     fun create(
         @PathVariable workspaceId: UUID,
         @Valid @RequestBody request: MergeCreateRequest,
-        @AuthenticationPrincipal principal: UserPrincipal?
+        @AuthenticationPrincipal principal: UserPrincipal
     ): ResponseEntity<ApiResponse<MergeResponse>> =
-        ResponseEntity.ok(ApiResponse.ok(mergeService.create(request.copy(workspaceId = workspaceId), principal?.userId)))
+        ResponseEntity.ok(ApiResponse.ok(mergeService.create(request.copy(workspaceId = workspaceId), principal.userId)))
 }
-
-
 
